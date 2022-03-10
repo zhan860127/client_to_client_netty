@@ -68,12 +68,11 @@ public class MyServerHandler extends ChannelInboundHandlerAdapter  {
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
         //接收服务端发送过来的消息
-        System.out.println("123");
-       sendmessage(ctx,msg);
+       //sendmessage(ctx,msg);
        JSONObject  jsonObjectdata=decodemsg.Decodemsg(msg);
        System.out.println("JSON  in myserver："+jsonObjectdata);
-
-       //sendmessage_test(ctx,jsonObjectdata);
+    
+       sendmessage_test(ctx,jsonObjectdata);
 
     }
 
@@ -88,10 +87,13 @@ public class MyServerHandler extends ChannelInboundHandlerAdapter  {
 		else
 			return null;
 	}
-    private void sendmessage_test(ChannelHandlerContext ctx, Object msg) throws Exception {
-        JSONObject JSONObject= decodemsg.Decodemsg(msg);
+    private void sendmessage_test(ChannelHandlerContext ctx, JSONObject  jsonObjectdata) throws Exception {
+        
+        sendtoserver(jsonObjectdata.get("method").toString(),jsonObjectdata.get("channel").toString(),jsonObjectdata.get("key").toString(),contexts.indexOf(ctx));
+
 
     }
+    /*
     private void sendmessage(ChannelHandlerContext ctx, Object msg) throws Exception {
         
      
@@ -104,19 +106,24 @@ public class MyServerHandler extends ChannelInboundHandlerAdapter  {
         sendtoserver(tokens[0],tokens[1],tokens[2],currentIndex);
         System.out.println("client:" + ctx.channel().remoteAddress() + "的消息：" + tokens[2]);
         
-    }
+    }*/
 
 
     private void sendtoserver(String method,String channel,String key,int currentIndex){
         //System.out.println("ok2");
+            System.out.println("Key1："+key);
         switch(method){
             default:
             broadcast(key,currentIndex);
             break;
             case "1":
             groupcast(key,channel,currentIndex);
+            break;//要 break 不然會自動往下跑
+
             case "2":
             unicast(channel,key,currentIndex);
+            break;
+
         }
 
     }
@@ -124,30 +131,32 @@ public class MyServerHandler extends ChannelInboundHandlerAdapter  {
 
     private void broadcast(String key,int currentIndex){
         
-        for (int i=0;i<contexts.size()-1;i++){   
+        for (int i=0;i<contexts.size();i++){   
             System.out.println("Usernum："+contexts.size());
             if (i!=currentIndex){
                 System.out.println("向："+i);
                 contexts.get(i).writeAndFlush(Unpooled.copiedBuffer("User"+currentIndex+"："+key,CharsetUtil.UTF_8));
             }
         }
-       
-        System.out.println("OK1");
-    }
+        }
 
     private void groupcast(String key,String channel ,int currentIndex){
-        ArrayList<Integer> group = map.get(channel);
+
+        System.out.println("Key2："+key);
+
+            ArrayList<Integer> group = map.get(channel);
                System.out.print(group);            
                 for (Integer num : group){
                    if(num<contexts.size()&&num!=currentIndex)    
-                   {                 
-                       contexts.get(num).writeAndFlush(Unpooled.copiedBuffer(currentIndex+"："+key ,CharsetUtil.UTF_8));                     
-                   }         
+                   {   System.out.println(num);      
+                       contexts.get(num).writeAndFlush(Unpooled.copiedBuffer("User"+currentIndex+"："+key,CharsetUtil.UTF_8));                     
+                   
+                    }         
                }
     }
 
     private void unicast(String target,String key,int currentIndex){
-                  
+        System.out.println("unicast work");
                        contexts.get(Integer.parseInt(target)).writeAndFlush(Unpooled.copiedBuffer(currentIndex+"："+key ,CharsetUtil.UTF_8));                     
                           
                }

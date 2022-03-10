@@ -49,8 +49,7 @@ public class MyClient {
             key=myObj.next();   
             try
             {
-                System.out.println(channel.isActive());
-                System.out.println(channel.id());
+
             channel.writeAndFlush(Unpooled.copiedBuffer(key, CharsetUtil.UTF_8));}
             catch(Exception e){
                 System.out.println(e);
