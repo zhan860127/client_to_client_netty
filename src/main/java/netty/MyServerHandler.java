@@ -29,6 +29,35 @@ public class MyServerHandler extends ChannelInboundHandlerAdapter  {
     ArrayList<Integer> first;
     ArrayList<Integer> second;
     ArrayList<ArrayList<Integer>> table= new ArrayList<ArrayList<Integer>>();
+    ArrayList<connet> connetlist=new ArrayList<connet>();
+
+
+    public void create_connet(String user1,String user2){
+        boolean temp1=false;
+        boolean temp2=false;
+        for(connet object:connetlist){
+            if(connet.tell_connet(user1,user2)==true){
+                temp1=true;
+            }
+            if(connet.tell_connet(user2,user1)==true){
+                temp2=true;
+            }
+        }
+        
+        if(!temp1&&temp2){
+            connet a1=new connet();
+            connet a2=new connet();
+            a1.setconnet(user1, user2);
+            a2.setconnet(user2,user1);
+            System.out.println(a1.getStatus());
+            connetlist.add(a1);
+            connetlist.add(a2);
+        }
+        
+        
+        
+
+    }
 
  
 
@@ -301,7 +330,7 @@ public class MyServerHandler extends ChannelInboundHandlerAdapter  {
             }
         }
 
-    
+        
 /*
 
     @Override
