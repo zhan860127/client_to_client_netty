@@ -1,22 +1,20 @@
 package netty;
 
 
-import io.netty.channel.ChannelHandler;
-import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.ChannelInboundHandlerAdapter;
-import io.netty.channel.ChannelHandler.Sharable;
-
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Scanner;
 import java.util.Vector;
-import java.util.concurrent.atomic.AtomicInteger;
+
+import org.json.JSONObject;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
+import io.netty.channel.ChannelHandler;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.util.CharsetUtil;
 
 @ChannelHandler.Sharable
@@ -70,8 +68,13 @@ public class MyServerHandler extends ChannelInboundHandlerAdapter  {
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
         //接收服务端发送过来的消息
-        //System.out.println(connectNum);
+        System.out.println("123");
        sendmessage(ctx,msg);
+       JSONObject  jsonObjectdata=decodemsg.Decodemsg(msg);
+       System.out.println("JSON  in myserver："+jsonObjectdata);
+
+       //sendmessage_test(ctx,jsonObjectdata);
+
     }
 
     public static String getLastElement(String[] list)
@@ -85,45 +88,55 @@ public class MyServerHandler extends ChannelInboundHandlerAdapter  {
 		else
 			return null;
 	}
+    private void sendmessage_test(ChannelHandlerContext ctx, Object msg) throws Exception {
+        JSONObject JSONObject= decodemsg.Decodemsg(msg);
 
+    }
     private void sendmessage(ChannelHandlerContext ctx, Object msg) throws Exception {
+        
+     
+        String[] tokens = decodemsg.decode(msg);
+      
 
-        ByteBuf byteBuf = (ByteBuf) msg;
-        String a= byteBuf.toString(CharsetUtil.UTF_8);
-        String[] tokens = a.split(",");
-        String key=getLastElement(tokens);
+        System.out.println("tokens.length："+tokens.length);
         int currentIndex =contexts.indexOf(ctx);
-        sendtoserver(tokens,key,currentIndex);
-        System.out.println("client:" + ctx.channel().remoteAddress() + "的消息：" + byteBuf.toString(CharsetUtil.UTF_8));
+            //System.out.println("ok");
+        sendtoserver(tokens[0],tokens[1],tokens[2],currentIndex);
+        System.out.println("client:" + ctx.channel().remoteAddress() + "的消息：" + tokens[2]);
+        
     }
 
 
-    private void sendtoserver(String[] tokens,String key,int currentIndex){
-        switch(tokens.length){
-            case 1:
+    private void sendtoserver(String method,String channel,String key,int currentIndex){
+        //System.out.println("ok2");
+        switch(method){
+            default:
             broadcast(key,currentIndex);
-            case 2:
-            groupcast(key,tokens,currentIndex);
-            case 3:
-            
-
+            break;
+            case "1":
+            groupcast(key,channel,currentIndex);
+            case "2":
+            unicast(channel,key,currentIndex);
         }
 
     }
 
 
     private void broadcast(String key,int currentIndex){
-
-        for (int i=0;i<contexts.size();i++){   
+        
+        for (int i=0;i<contexts.size()-1;i++){   
+            System.out.println("Usernum："+contexts.size());
             if (i!=currentIndex){
-                contexts.get(i).writeAndFlush(Unpooled.copiedBuffer(currentIndex+"："+key,CharsetUtil.UTF_8));
+                System.out.println("向："+i);
+                contexts.get(i).writeAndFlush(Unpooled.copiedBuffer("User"+currentIndex+"："+key,CharsetUtil.UTF_8));
             }
         }
-
+       
+        System.out.println("OK1");
     }
 
-    private void groupcast(String key,String[] tokens ,int currentIndex){
-        ArrayList<Integer> group = map.get(tokens[0]);
+    private void groupcast(String key,String channel ,int currentIndex){
+        ArrayList<Integer> group = map.get(channel);
                System.out.print(group);            
                 for (Integer num : group){
                    if(num<contexts.size()&&num!=currentIndex)    
@@ -132,6 +145,13 @@ public class MyServerHandler extends ChannelInboundHandlerAdapter  {
                    }         
                }
     }
+
+    private void unicast(String target,String key,int currentIndex){
+                  
+                       contexts.get(Integer.parseInt(target)).writeAndFlush(Unpooled.copiedBuffer(currentIndex+"："+key ,CharsetUtil.UTF_8));                     
+                          
+               }
+
     
 /*
 
@@ -148,8 +168,11 @@ public class MyServerHandler extends ChannelInboundHandlerAdapter  {
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
         //发生异常，关闭通道
+        System.out.println(cause);
         ctx.close();
     }
+
+    
 
 }
 

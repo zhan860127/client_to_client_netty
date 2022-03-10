@@ -1,6 +1,7 @@
 package netty;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
+import java.nio.charset.Charset;
 import java.util.Scanner;
 
 import io.netty.bootstrap.Bootstrap;
@@ -39,14 +40,21 @@ public class MyClient {
             //连接服务端
             ChannelFuture channelFuture = bootstrap.connect("127.0.0.1", 6666).sync();
 
-            Channel channel =channelFuture.channel();
+            Channel  channel =channelFuture.channel();
             
             Scanner myObj = new Scanner(System.in);
             String key;
             
             while(true){
             key=myObj.next();   
-            channel.writeAndFlush(Unpooled.copiedBuffer(key, CharsetUtil.UTF_8));
+            try
+            {
+                System.out.println(channel.isActive());
+                System.out.println(channel.id());
+            channel.writeAndFlush(Unpooled.copiedBuffer(key, CharsetUtil.UTF_8));}
+            catch(Exception e){
+                System.out.println(e);
+            }
             }
 
 

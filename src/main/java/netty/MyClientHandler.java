@@ -31,7 +31,9 @@ public class MyClientHandler extends ChannelInboundHandlerAdapter {
         //接收服务端发送过来的消息
     }
 
-    }
+}
+
+
 
 
 

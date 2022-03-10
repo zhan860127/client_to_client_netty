@@ -18,6 +18,18 @@ The server can pass the message to all client.
 change the method new handle function to sharable witch can share the handle with all client
 add the vector to manage the client message.
 
+調整 protected void initChannel(SocketChannel socketChannel) 
+加入 share
+private  final MyServerHandler SHARED =  new MyServerHandler();
+
+讓傳入的 serverhandler 可以共享的
+
+並且在 MyServerHandler中
+透過變數來判定
+
+
+
+
 ## 問題
 
 server 變數沒辦法共享，不同的 channel 各自的server 變數都非共享
