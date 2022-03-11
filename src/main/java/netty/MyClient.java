@@ -17,7 +17,7 @@ import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.util.CharsetUtil;
 
 public class MyClient {
-
+    static public Scanner myObj = new Scanner(System.in);
     public static void main(String[] args) throws Exception {
         NioEventLoopGroup eventExecutors = new NioEventLoopGroup();
         try {
@@ -36,21 +36,51 @@ public class MyClient {
                             
                         }
                     });
-            System.out.println("客户端准备就绪，随时可以起飞~");
+            System.out.println("Command\n(channel,target,message)：send massage\nchannel：\n0：broadcast \n1：groupcast\n2：unicast");
             //连接服务端
+            System.out.println("unicast rule");
+            
+            System.out.println("2,X,connect X is the targetID you want to construct\n");
+            
+            System.out.println("'list'：lookup group list\n");
+            
             ChannelFuture channelFuture = bootstrap.connect("127.0.0.1", 6666).sync();
 
             Channel  channel =channelFuture.channel();
             
-            Scanner myObj = new Scanner(System.in);
+            
             String key;
             
             while(true){
             key=myObj.next();   
+            String[] tokens=key.split(",");
+            if(tokens[0].equals("2")&&tokens.length>1){
+                MyClientHandler.connetmember.add(tokens[1]);
+                MyClientHandler.channel="0";
+            }
+
+
+
+
             try
             {
+                if(key.equals("Y")){
 
-            channel.writeAndFlush(Unpooled.copiedBuffer(key, CharsetUtil.UTF_8));}
+                    MyClientHandler.addconnet();
+
+                    //System.out.println(MyClientHandler.connetmember);
+                    channel.writeAndFlush(Unpooled.copiedBuffer("2,"+MyClientHandler.channel+",agree", CharsetUtil.UTF_8));
+
+                    
+                }
+                else if(key.equals("N")){
+                    channel.writeAndFlush(Unpooled.copiedBuffer("2,"+MyClientHandler.channel+",N", CharsetUtil.UTF_8));
+
+
+                }
+            else{
+            
+                channel.writeAndFlush(Unpooled.copiedBuffer(key, CharsetUtil.UTF_8));}}
             catch(Exception e){
                 System.out.println(e);
             }

@@ -19,44 +19,46 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.util.CharsetUtil;
 
-@ChannelHandler.Sharable
+
 public class MyServerHandler extends ChannelInboundHandlerAdapter  {
     private static int MAX_CONN=15;
     public int groupNum = 2;
-    private Vector <ChannelHandlerContext> contexts=new Vector<>(MAX_CONN);
-    private Map<String, ArrayList<Integer>> map = new HashMap<>();
-    private Map<String, Boolean> map_valid = new HashMap<>();
-    ArrayList<Integer> first;
-    ArrayList<Integer> second;
-    ArrayList<ArrayList<Integer>> table= new ArrayList<ArrayList<Integer>>();
-    ArrayList<connet> connetlist=new ArrayList<connet>();
+    private Vector <ChannelHandlerContext> contexts=new Vector<>(MAX_CONN);//保存channel的列表
+    private Map<String, ArrayList<Integer>> map = new HashMap<>();//對照群組人員以及其名稱
+    private Map<String, Boolean> map_valid = new HashMap<>(); //顯示或隱藏群組
+    ArrayList<Integer> first; //初始化群組
+    ArrayList<Integer> second;//初始化群組
+    ArrayList<ArrayList<Integer>> table= new ArrayList<ArrayList<Integer>>(); //保存群組人員
+    ArrayList<connet> connetlist=new ArrayList<connet>(); //連線列表
 
 
     public void create_connet(String user1,String user2){
+
+            connet a=new connet();
+            a.setconnet(user1,user2);
+
+            connetlist.add(a);
+   
+       
+    
+    }
+
+
+    public boolean tell_connets(String user1,String user2){
         boolean temp1=false;
         boolean temp2=false;
         for(connet object:connetlist){
-            if(connet.tell_connet(user1,user2)==true){
+            
+            if(object.tell_connet(user1,user2)==true){
                 temp1=true;
             }
-            if(connet.tell_connet(user2,user1)==true){
+            if(object.tell_connet(user2,user1)==true){
                 temp2=true;
             }
         }
-        
-        if(!temp1&&temp2){
-            connet a1=new connet();
-            connet a2=new connet();
-            a1.setconnet(user1, user2);
-            a2.setconnet(user2,user1);
-            System.out.println(a1.getStatus());
-            connetlist.add(a1);
-            connetlist.add(a2);
-        }
-        
-        
-        
+  
 
+            return (temp1&&temp2);
     }
 
  
@@ -69,18 +71,16 @@ public class MyServerHandler extends ChannelInboundHandlerAdapter  {
         map.put("1", first);
         map_valid.put("1",true);
         map.put("2", second);
-        map_valid.put("2",true);
+        map_valid.put("2",false);
     }//initialize the group
     
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
         //发送消息到服务端
   
-
-        System.out.println("成功連線");
         
         contexts.add(ctx);
-
+        ctx.channel().writeAndFlush(Unpooled.copiedBuffer("Your userID is "+Integer.toString(contexts.indexOf(ctx)),CharsetUtil.UTF_8));    
 
 
         
@@ -109,8 +109,31 @@ public class MyServerHandler extends ChannelInboundHandlerAdapter  {
        //sendmessage(ctx,msg);
        JSONObject  jsonObjectdata=decodemsg.Decodemsg(msg);
        System.out.println("JSON  in myserver："+jsonObjectdata);
-    
-       sendmessage_test(ctx,jsonObjectdata);
+       switch(jsonObjectdata.get("key").toString()){
+        case "list":
+
+
+            for (String l : map.keySet()) {
+           System.out.println(map_valid.get(l));
+            if(map_valid.get(l)){
+                ctx.channel().writeAndFlush(Unpooled.copiedBuffer(map.get(l).toString(),CharsetUtil.UTF_8));
+                System.out.println(map.toString());
+            }
+
+
+            }
+
+            break;
+        
+        
+        
+        default:
+            sendmessage_test(ctx,jsonObjectdata);
+            break;
+
+       }
+
+       
     }
     private void manage_member(String key,Scanner myObj){
         switch(key){
@@ -140,7 +163,7 @@ public class MyServerHandler extends ChannelInboundHandlerAdapter  {
 
             break;
 
-            case "change_list_name":
+            case "change_group_name":
             System.out.println("which group you want to change");
             String group_1=myObj.next();
             System.out.println("change name");
@@ -148,7 +171,17 @@ public class MyServerHandler extends ChannelInboundHandlerAdapter  {
             ChangeGroupName(group_1,group_2);
 
             break;
+            case "change_group_valid":
+            System.out.println("group list ");
+            System.out.println(map);
+            System.out.println("witch group want to change validation");
+            key=myObj.next();
 
+            System.out.println("validatio you want to change");
+            String key2=myObj.next();
+            map_valid.put(key,Boolean.parseBoolean(key2));
+
+            break;
 
             default :
                 if(key.matches("list,\\d")){
@@ -200,7 +233,7 @@ public class MyServerHandler extends ChannelInboundHandlerAdapter  {
 
     private void sendtoserver(String method,String channel,String key,int currentIndex){
         //System.out.println("ok2");
-            System.out.println("Key1："+key);
+          
         switch(method){
             default:
             broadcast(key,currentIndex);
@@ -224,31 +257,61 @@ public class MyServerHandler extends ChannelInboundHandlerAdapter  {
             System.out.println("Usernum："+contexts.size());
             if (i!=currentIndex){
                 System.out.println("向："+i);
-                contexts.get(i).writeAndFlush(Unpooled.copiedBuffer("User"+currentIndex+"："+key,CharsetUtil.UTF_8));
+                contexts.get(i).writeAndFlush(Unpooled.copiedBuffer("User-"+currentIndex+"-："+key,CharsetUtil.UTF_8));
             }
         }
         }
 
     private void groupcast(String key,String channel ,int currentIndex){
 
-        System.out.println("Key2："+key);
-
+        //System.out.println("Key2："+key);
+            if(map.containsKey(channel)){
             ArrayList<Integer> group = map.get(channel);
-               System.out.print(group);            
+               System.out.print(group); 
+                          
                 for (Integer num : group){
                    if(num<contexts.size()&&num!=currentIndex)    
-                   {   System.out.println(num);      
-                       contexts.get(num).writeAndFlush(Unpooled.copiedBuffer("User"+currentIndex+"："+key,CharsetUtil.UTF_8));                     
+                   {   System.out.println(num);     
+                       // System.out.println("Key"+key);
+                       contexts.get(num).writeAndFlush(Unpooled.copiedBuffer("User-"+currentIndex+"-："+key,CharsetUtil.UTF_8));                     
                    
                     }         
+               }}else{
+
+                    contexts.get(currentIndex).writeAndFlush(Unpooled.copiedBuffer("group 不存在",CharsetUtil.UTF_8));    
                }
     }
 
     private void unicast(String target,String key,int currentIndex){
-        System.out.println("unicast work");
-                       contexts.get(Integer.parseInt(target)).writeAndFlush(Unpooled.copiedBuffer(currentIndex+"："+key ,CharsetUtil.UTF_8));                     
+        //System.out.println("unicast work");
+        if (key.equals("agree")){
+            create_connet(Integer.toString(currentIndex), target);
+
+            create_connet(target,Integer.toString(currentIndex)) ;
+            contexts.get(Integer.parseInt(target)).writeAndFlush(Unpooled.copiedBuffer("0,-0-,成功連線\n" ,CharsetUtil.UTF_8));                     
+            contexts.get(currentIndex).writeAndFlush(Unpooled.copiedBuffer("0,-0-,成功連線\n",CharsetUtil.UTF_8));                     
+
+        }
+
+        if (key.equals("N")){
+
+         //   contexts.get(Integer.parseInt(target)).writeAndFlush(Unpooled.copiedBuffer("0,-0-,成功連線\n" ,CharsetUtil.UTF_8));                     
+            contexts.get(Integer.parseInt(target)).writeAndFlush(Unpooled.copiedBuffer("對方拒絕連線",CharsetUtil.UTF_8));                     
+
+        }
+        
+        if(!tell_connets(Integer.toString(currentIndex),target)){
+            
+            if(key.equals("connect"))
+            {
+            contexts.get(Integer.parseInt(target)).writeAndFlush(Unpooled.copiedBuffer("是否要與 User-"+currentIndex +"-建立連線[Y/N]" ,CharsetUtil.UTF_8));                     
+            }
+        }else
+        {
+        
+        contexts.get(Integer.parseInt(target)).writeAndFlush(Unpooled.copiedBuffer("User-"+currentIndex+"-："+key ,CharsetUtil.UTF_8));                     
                           
-               }
+        }}
 
 
     public void remove_member(String key){

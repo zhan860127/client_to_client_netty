@@ -45,11 +45,12 @@ public class Myserver {
                         }
                     });//给workerGroup的EventLoop对应的管道设置处理器
             System.out.println("伺服器準備就緒");
+            
             //绑定端口号，启动服务端
 
             
             ChannelFuture channelFuture = bootstrap.bind(6666).sync();
-            
+            System.out.println("管理指令：\n add_member\n remove_member\n list\n drop_group\n change_list_name\n list,X \n");
             
             //对关闭通道进行监听
 
