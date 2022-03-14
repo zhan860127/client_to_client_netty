@@ -1,7 +1,9 @@
 package netty;
 
 
-import java.net.InetSocketAddress;
+
+import java.sql.SQLException;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -10,28 +12,60 @@ import java.util.Scanner;
 import java.util.Vector;
 
 import org.json.JSONObject;
-import java.util.regex.*;
 
-import io.netty.buffer.ByteBuf;
+
+
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.util.CharsetUtil;
 
-
+@ChannelHandler.Sharable
 public class MyServerHandler extends ChannelInboundHandlerAdapter  {
     private static int MAX_CONN=15;
     public int groupNum = 2;
-    private Vector <ChannelHandlerContext> contexts=new Vector<>(MAX_CONN);//保存channel的列表
-    private Map<String, ArrayList<Integer>> map = new HashMap<>();//對照群組人員以及其名稱
-    private Map<String, Boolean> map_valid = new HashMap<>(); //顯示或隱藏群組
-    ArrayList<Integer> first; //初始化群組
-    ArrayList<Integer> second;//初始化群組
-    ArrayList<ArrayList<Integer>> table= new ArrayList<ArrayList<Integer>>(); //保存群組人員
-    ArrayList<connet> connetlist=new ArrayList<connet>(); //連線列表
+    private static Vector <ChannelHandlerContext> contexts=new Vector<>(MAX_CONN);//保存channel的列表
+    private static Map<String, ArrayList<Integer>> map = new HashMap<>();//對照群組人員以及其名稱
+    private static Map<String, Boolean> map_valid = new HashMap<>(); //顯示或隱藏群組
+    static ArrayList<Integer> first; //初始化群組
+    static ArrayList<Integer> second;//初始化群組
+    static ArrayList<ArrayList<Integer>> table= new ArrayList<ArrayList<Integer>>(); //保存群組人員
+    
+    //ArrayList<connet> connetlist=new ArrayList<connet>(); //連線列表
 
 
+   public MyServerHandler(){
+        new Thread(new Runnable() {
+
+
+            @Override
+            public void run(){
+   
+                System.out.print("adasds");
+                Scanner myObj=new Scanner(System.in);
+                while(true){         
+                try {
+                   
+                    manage_member(myObj);
+                } catch (SQLException e) {
+                    // TODO Auto-generated catch block
+                    e.printStackTrace();
+                } catch (Exception e) {
+                    // TODO Auto-generated catch block
+                    e.printStackTrace();
+                }
+                    
+            
+                
+                
+                }
+                
+            }
+        }).start(); 
+    }
+
+/*
     public void create_connet(String user1,String user2){
 
             connet a=new connet();
@@ -59,11 +93,13 @@ public class MyServerHandler extends ChannelInboundHandlerAdapter  {
   
 
             return (temp1&&temp2);
-    }
+    }*/
 
  
-
+ /*
     public MyServerHandler(){
+       
+        
         first = new ArrayList<Integer>(Arrays.asList(1,3));
         second = new ArrayList<Integer>(Arrays.asList(2,3,5));
         table.add(first);
@@ -72,7 +108,7 @@ public class MyServerHandler extends ChannelInboundHandlerAdapter  {
         map_valid.put("1",true);
         map.put("2", second);
         map_valid.put("2",false);
-    }//initialize the group
+    }//initialize the group*/
     
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
@@ -85,21 +121,7 @@ public class MyServerHandler extends ChannelInboundHandlerAdapter  {
 
         
       
-        new Thread(new Runnable() {
-
-            @Override
-            public void run() {
-                Scanner myObj = new Scanner(System.in);
-                String key;
-                
-                while(true){
-                key=myObj.next();  
-                manage_member(key,myObj);
-                
-                }
-            
-            }
-        }).start();       //purpose for let server can communication to client    
+       //purpose for let server can communication to client    
         }
 
 
@@ -135,12 +157,16 @@ public class MyServerHandler extends ChannelInboundHandlerAdapter  {
 
        
     }
-    private void manage_member(String key,Scanner myObj){
+    private void manage_member(Scanner myObj) throws SQLException, Exception{
+        String key=myObj.nextLine();
         switch(key){
             case "add_member":
-            System.out.println("add_member(group,member1,member2...)");
+            System.out.println("add_member");
+            System.out.print("Group：");
             key=myObj.next();  
-            add_member(key);
+            System.out.print("member\n");
+            String memberlist=myObj.next();
+            Database.DB_group_add_member(key,memberlist);
             break;
 
             case "remove_member":
@@ -151,7 +177,7 @@ public class MyServerHandler extends ChannelInboundHandlerAdapter  {
 
             case "list":
             System.out.println("group list ");
-            System.out.println(map);
+            Database.list_group();
             break;
 
             case "drop_group":
@@ -231,7 +257,7 @@ public class MyServerHandler extends ChannelInboundHandlerAdapter  {
     }*/
 
 
-    private void sendtoserver(String method,String channel,String key,int currentIndex){
+    private void sendtoserver(String method,String channel,String key,int currentIndex) throws ClassNotFoundException, SQLException{
         //System.out.println("ok2");
           
         switch(method){
@@ -282,12 +308,16 @@ public class MyServerHandler extends ChannelInboundHandlerAdapter  {
                }
     }
 
-    private void unicast(String target,String key,int currentIndex){
+    private void unicast(String target,String key,int currentIndex) throws ClassNotFoundException, SQLException{
         //System.out.println("unicast work");
         if (key.equals("agree")){
-            create_connet(Integer.toString(currentIndex), target);
-
-            create_connet(target,Integer.toString(currentIndex)) ;
+            //create_connet(Integer.toString(currentIndex), target);
+            try{
+            Database.DBcreate_connet(Integer.toString(currentIndex),target);
+            }catch(Exception e){
+                System.out.println(e);
+            }
+            //create_connet(target,Integer.toString(currentIndex)) ;
             contexts.get(Integer.parseInt(target)).writeAndFlush(Unpooled.copiedBuffer("0,-0-,成功連線\n" ,CharsetUtil.UTF_8));                     
             contexts.get(currentIndex).writeAndFlush(Unpooled.copiedBuffer("0,-0-,成功連線\n",CharsetUtil.UTF_8));                     
 
@@ -299,18 +329,22 @@ public class MyServerHandler extends ChannelInboundHandlerAdapter  {
             contexts.get(Integer.parseInt(target)).writeAndFlush(Unpooled.copiedBuffer("對方拒絕連線",CharsetUtil.UTF_8));                     
 
         }
-        
-        if(!tell_connets(Integer.toString(currentIndex),target)){
+        System.out.println(Database.DBtell_connect(Integer.toString(currentIndex),target));
+
+
+        if(!Database.DBtell_connect(Integer.toString(currentIndex),target)){
             
             if(key.equals("connect"))
             {
             contexts.get(Integer.parseInt(target)).writeAndFlush(Unpooled.copiedBuffer("是否要與 User-"+currentIndex +"-建立連線[Y/N]" ,CharsetUtil.UTF_8));                     
+            
             }
         }else
         {
         
         contexts.get(Integer.parseInt(target)).writeAndFlush(Unpooled.copiedBuffer("User-"+currentIndex+"-："+key ,CharsetUtil.UTF_8));                     
-                          
+        Database.refresh(Integer.toString(currentIndex), target);
+            
         }}
 
 

@@ -11,7 +11,7 @@ public class decodemsg {
 
     public  static JSONObject Decodemsg(Object msg){
         String[] tokens=decode(msg);
-        Map map = new HashMap();
+        Map<String,String> map = new HashMap<String,String>();
         map.put("method", tokens[0]);
         map.put("channel", tokens[1]);
         map.put("key", tokens[2]);

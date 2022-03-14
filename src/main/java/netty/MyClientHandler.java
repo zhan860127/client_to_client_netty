@@ -1,23 +1,23 @@
 package netty;
 
-import java.lang.reflect.Array;
+
 import java.util.ArrayList;
-import java.util.Scanner;
-import java.util.concurrent.atomic.AtomicInteger;
+
+
 
 import org.json.JSONObject;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.Unpooled;
-import io.netty.channel.SimpleChannelInboundHandler;
-import io.netty.channel.ChannelHandler.Sharable;
+
+
 import io.netty.util.CharsetUtil;
 
+
 public class MyClientHandler extends ChannelInboundHandlerAdapter {
-    private ChannelHandlerContext chc;
-    private AtomicInteger integer = new AtomicInteger(0);
+    //private ChannelHandlerContext chc;
+    //private AtomicInteger integer = new AtomicInteger(0);
     static public ArrayList<String> connetmember=new ArrayList<String>();
     static public String channel;
     static public String method;
