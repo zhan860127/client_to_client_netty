@@ -1,10 +1,12 @@
 package netty;
+import java.lang.reflect.Array;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.ArrayList;
 
 public class Database {
     public static void DB_connect(String[] args) throws ClassNotFoundException, SQLException{
@@ -114,10 +116,77 @@ public class Database {
     }
         statement.close();
 
+    }
+
+
+    public static void list_group_i(String i)throws Exception,SQLException{
+
+        Class.forName("com.mysql.cj.jdbc.Driver") ;
+        Connection connection = DriverManager.getConnection("jdbc:mysql://192.168.1.104:3306/member_group","root","0000");
+        String sql = "select user from member_group.Grouplist where groupid="+i+" order by user asc";
+        Statement statement=connection.createStatement();
+        ResultSet rs=statement.executeQuery(sql);
+
+        System.out.println("|User\t|");
+        System.out.println("=====================");
+        while (rs.next()){
+   
+          
+            String user = rs.getString("user");
+
+            
+            System.out.print("|");
+
+            System.out.print(user);
+            System.out.println("\t|");
+        }
+
+
+
+    }
+
+    public static String get_member_id(String i)throws Exception,SQLException{
+
+        Class.forName("com.mysql.cj.jdbc.Driver") ;
+        //System.out.println("I="+i);
+        Connection connection = DriverManager.getConnection("jdbc:mysql://192.168.1.104:3306/member_group","root","0000");
+        String sql = "select ID from member_group.user where username='"+i+"'";
+        Statement statement=connection.createStatement();
+        ResultSet rs=statement.executeQuery(sql);
+
+        String user="";
+        while (rs.next()){
+   
+          
+            user = rs.getString("ID");
+
+        }
+
         
+        return user;
+    }
 
 
+    public static ArrayList<String> group_get_member_id(String i)throws Exception,SQLException{
 
+        Class.forName("com.mysql.cj.jdbc.Driver") ;
+        System.out.println("I="+i);
+        Connection connection = DriverManager.getConnection("jdbc:mysql://192.168.1.104:3306/member_group","root","0000");
+        String sql = "select user from member_grouplist.user where groupid='"+i+"'";
+        Statement statement=connection.createStatement();
+        ResultSet rs=statement.executeQuery(sql);
+
+        ArrayList<String> list=new ArrayList<String> ();
+        
+        while (rs.next()){
+   
+            list.add(rs.getString("user"));
+            
+
+        }
+
+        
+        return list;
     }
 
 
