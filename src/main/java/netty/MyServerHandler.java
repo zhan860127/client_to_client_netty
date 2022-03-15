@@ -13,8 +13,7 @@ import java.util.Vector;
 
 import org.json.JSONObject;
 
-
-
+import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
@@ -113,7 +112,7 @@ public class MyServerHandler extends ChannelInboundHandlerAdapter  {
   
         
         contexts.add(ctx);
-        ctx.channel().writeAndFlush(Unpooled.copiedBuffer("please insort name:name\n",CharsetUtil.UTF_8));    
+        ctx.channel().writeAndFlush(Unpooled.copiedBuffer("false,please insort name:name\n",CharsetUtil.UTF_8));    
         //System.out.println(ctx);
        //purpose for let server can communication to client    
         }
@@ -123,36 +122,57 @@ public class MyServerHandler extends ChannelInboundHandlerAdapter  {
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
         //接收服务端发送过来的消息
        //sendmessage(ctx,msg);
-       
+       ByteBuf byteBuf = (ByteBuf) msg;
+       String b= byteBuf.toString(CharsetUtil.UTF_8);
+       System.out.println("Origin"+b);
        JSONObject  jsonObjectdata=decodemsg.Decodemsg(msg);
        System.out.println("JSON  in myserver："+jsonObjectdata);
 
        String message=jsonObjectdata.get("key").toString();
 
+
        switch(message){
         case "list":
-            for (String l : map.keySet()) {
-           System.out.println(map_valid.get(l));
-            if(map_valid.get(l)){
-                ctx.channel().writeAndFlush(Unpooled.copiedBuffer(map.get(l).toString(),CharsetUtil.UTF_8));
-                System.out.println(map.toString());
-            }
-            }
 
+        ArrayList<String> group = Database.group_get();
+            int i=1;    
+        for (String l : group) {
+            System.out.println((i%2==0)+","+l);
+         ctx.channel().write(Unpooled.copiedBuffer(l,CharsetUtil.UTF_8));
+                if(i%2==0){
+                    ctx.channel().write(Unpooled.copiedBuffer("\n",CharsetUtil.UTF_8));
+                }else{
+                ctx.channel().write(Unpooled.copiedBuffer("|",CharsetUtil.UTF_8));
+            }
+            i++;
+            
+        }
+        ctx.channel().flush();
             break;
         
         default:
             if(message.matches("name:(.*)")){
-              // System.out.print("usernameinsert");
+               //System.out.print("usernameinsert");
               
                 String[] a=message.split(":");
                
                 String id=Database.get_member_id(a[1]);
-                System.out.println(id);
+                System.out.println("id="+id);
+
+                if(id.equals("")){
+           
+                    Database.add_user(a[1]);
+                }
+               id=Database.get_member_id(a[1]);
+
                 map_connect.put(id,contexts.indexOf(ctx));
                 re_map_connect.put(contexts.indexOf(ctx),id);
+                
 
+
+                
                 System.out.println(Arrays.asList(map_connect));
+                ctx.channel().writeAndFlush(Unpooled.copiedBuffer("Status:true",CharsetUtil.UTF_8));
             }    
             else{
                 
@@ -176,9 +196,13 @@ public class MyServerHandler extends ChannelInboundHandlerAdapter  {
             break;
 
             case "remove_member":
-            System.out.println("remove_member(group,member1,member2...)");
+            
+            System.out.print("Group：");
             key=myObj.next();  
-            remove_member(key);
+            System.out.print("member：(user1,user2,.....)\n");
+            String memberlist1=myObj.next();
+            Database.DB_group_remove_member(key,memberlist1);
+            
             break;
 
             case "list":
@@ -188,10 +212,10 @@ public class MyServerHandler extends ChannelInboundHandlerAdapter  {
 
             case "drop_group":
             System.out.println("group list ");
-            System.out.println(map);
+            Database.list_group();
             System.out.println("witch group want to drop");
             key=myObj.next();
-            drop_group(key);
+            Database.DB_drop_group(key);
 
             break;
 
@@ -243,16 +267,16 @@ public class MyServerHandler extends ChannelInboundHandlerAdapter  {
 			return null;
 	}
     private void sendmessage_test(ChannelHandlerContext ctx, JSONObject  jsonObjectdata) throws Exception {
-        
+        if(jsonObjectdata.get("status").toString().equals("true")){
         
         String channel=jsonObjectdata.get("channel").toString();
-        String id=Database.get_member_id(channel);
-        System.out.println("id:"+id);
-        if(id==""){
-            id=channel;
-        }
-        sendtoserver(jsonObjectdata.get("method").toString(),id,jsonObjectdata.get("key").toString(),contexts.indexOf(ctx));
 
+        sendtoserver(jsonObjectdata.get("method").toString(),jsonObjectdata.get("channel").toString(),jsonObjectdata.get("key").toString(),contexts.indexOf(ctx));
+        }
+        else{
+
+            ctx.channel().writeAndFlush(Unpooled.copiedBuffer("false,please insort name:name\n",CharsetUtil.UTF_8));
+        }
 
     }
 
@@ -275,7 +299,7 @@ public class MyServerHandler extends ChannelInboundHandlerAdapter  {
 
     private void sendtoserver(String method,String channel,String key,int currentIndex) throws Exception{
         //System.out.println("ok2");
-          
+        
         switch(method){
             default:
             broadcast(key,currentIndex);
@@ -285,7 +309,11 @@ public class MyServerHandler extends ChannelInboundHandlerAdapter  {
             break;//要 break 不然會自動往下跑
 
             case "2":
-            unicast(channel,key,currentIndex);
+            String id=Database.get_member_id(channel);
+            if(id.equals("")){
+                id=channel;
+            }
+            unicast(id,key,currentIndex);
             break;
 
         }
@@ -293,13 +321,13 @@ public class MyServerHandler extends ChannelInboundHandlerAdapter  {
     }
 
 
-    private void broadcast(String key,int currentIndex){
-        
+    private void broadcast(String key,int currentIndex) throws SQLException, Exception{
+        String user=Database.get_member_name(re_map_connect.get(currentIndex));
         for (int i=0;i<contexts.size();i++){   
             System.out.println("Usernum："+contexts.size());
             if (i!=currentIndex){
                 System.out.println("向："+i);
-                contexts.get(i).writeAndFlush(Unpooled.copiedBuffer("User-"+currentIndex+"-："+key,CharsetUtil.UTF_8));
+                contexts.get(i).writeAndFlush(Unpooled.copiedBuffer(user+"："+key,CharsetUtil.UTF_8));
             }
         }
         }
@@ -307,35 +335,49 @@ public class MyServerHandler extends ChannelInboundHandlerAdapter  {
     private void groupcast(String key,String channel ,int currentIndex) throws SQLException, Exception{
 
         //System.out.println("Key2："+key);
-            if(map.containsKey(channel)){
+        String name=Database.get_member_name(re_map_connect.get(currentIndex));
             ArrayList<String> group = Database.group_get_member_id(channel);
-               //System.out.print(group); 
-                          
+            System.out.println(group.isEmpty());
+            if(!group.isEmpty()){
                 for (String num : group){
-                   /*if(num<contexts.size()&&num!=currentIndex)    
-                   {   System.out.println(num);     
-                       // System.out.println("Key"+key);
-                       contexts.get(num).writeAndFlush(Unpooled.copiedBuffer("User-"+currentIndex+"-："+key,CharsetUtil.UTF_8));                     
                    
-                    }         */
+                   if(!map_connect.isEmpty())    
+                   {   
+
+                       if(map_connect.get(num)!=null){
+                        //System.out.println("123123");
+                        System.out.println(num);     
+                       // System.out.println("Key"+key);
+                       contexts.get(map_connect.get(num)).writeAndFlush(Unpooled.copiedBuffer(name+"："+key,CharsetUtil.UTF_8));                     
+                   }
+                    }         
                }}else{
 
                     contexts.get(currentIndex).writeAndFlush(Unpooled.copiedBuffer("group 不存在",CharsetUtil.UTF_8));    
                }
     }
 
-    private void unicast(String target,String key,int currentIndex) throws ClassNotFoundException, SQLException{
+    private void unicast(String target,String key,int currentIndex) throws Exception{
+        System.out.println("target="+target);
+        String id = re_map_connect.get(currentIndex);
         //System.out.println("unicast work");
         if (key.equals("agree")){
+           
+            
+            System.out.println("currentIndexin："+id);
             //create_connet(Integer.toString(currentIndex), target);
             try{
-            Database.DBcreate_connet(Integer.toString(currentIndex),target);
+            Database.DBcreate_connet(id,target);
             }catch(Exception e){
                 System.out.println(e);
             }
+
+         
             //create_connet(target,Integer.toString(currentIndex)) ;
-            contexts.get(map_connect.get(target)).writeAndFlush(Unpooled.copiedBuffer("0,-0-,成功連線\n" ,CharsetUtil.UTF_8));                     
-            contexts.get(currentIndex).writeAndFlush(Unpooled.copiedBuffer("0,-0-,成功連線\n",CharsetUtil.UTF_8));                     
+            contexts.get(map_connect.get(target)).writeAndFlush(Unpooled.copiedBuffer("成功連線\n" ,CharsetUtil.UTF_8));      
+            
+
+            contexts.get(currentIndex).writeAndFlush(Unpooled.copiedBuffer("成功連線\n",CharsetUtil.UTF_8));                     
 
         }
 
@@ -345,21 +387,33 @@ public class MyServerHandler extends ChannelInboundHandlerAdapter  {
             contexts.get(map_connect.get(target)).writeAndFlush(Unpooled.copiedBuffer("對方拒絕連線",CharsetUtil.UTF_8));                     
 
         }
-        System.out.println(Database.DBtell_connect(Integer.toString(currentIndex),target));
+        //System.out.println(Database.DBtell_connect(Integer.toString(currentIndex),target));
 
 
-        if(!Database.DBtell_connect(Integer.toString(currentIndex),target)){
+        if(!Database.DBtell_connect(id,target)){
             
             if(key.equals("connect"))
             {
-            contexts.get(Integer.parseInt(target)).writeAndFlush(Unpooled.copiedBuffer("是否要與 User-"+currentIndex +"-建立連線[Y/N]" ,CharsetUtil.UTF_8));                     
             
-            }
+            String name=Database.get_member_name(re_map_connect.get(currentIndex));
+            
+            System.out.println("map="+map_connect);
+            //System.out.println(target);
+            contexts.get(map_connect.get(target)).write(Unpooled.copiedBuffer("是否要與 User "+name +" :建立連線[Y/N]" ,CharsetUtil.UTF_8));                     
+            contexts.get(map_connect.get(target)).flush();
+            contexts.get(map_connect.get(target)).write(Unpooled.copiedBuffer("User-"+name ,CharsetUtil.UTF_8));
+            contexts.get(map_connect.get(target)).flush();
+        }
         }else
         {
         //System.out.print("123123");
-        contexts.get(map_connect.get(target)).writeAndFlush(Unpooled.copiedBuffer("User-"+currentIndex+"-："+key ,CharsetUtil.UTF_8));                     
-        Database.refresh(Integer.toString(currentIndex), target);
+
+       
+        String user=Database.get_member_name(re_map_connect.get(currentIndex));
+        contexts.get(map_connect.get(target)).writeAndFlush(Unpooled.copiedBuffer(user+"："+key ,CharsetUtil.UTF_8));  
+        
+        
+        Database.refresh(id, target);
             
         }}
 
@@ -403,7 +457,7 @@ public class MyServerHandler extends ChannelInboundHandlerAdapter  {
             }else{System.out.println("group is not exist");}
             }
     
-    public void add_member(String key){
+    /*public void add_member(String key){
         String[] tokens = key.split(",");
 
         Integer[]temp=new Integer[tokens.length];
@@ -422,7 +476,7 @@ public class MyServerHandler extends ChannelInboundHandlerAdapter  {
         
         }
     
-        }
+        }*/
 
 
         private void increment_member(ArrayList<Integer> group,Integer[] member){

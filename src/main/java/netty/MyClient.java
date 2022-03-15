@@ -13,8 +13,13 @@ import io.netty.channel.socket.SocketChannel;
 
 import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.util.CharsetUtil;
-
 public class MyClient {
+    static boolean userstate=false;
+    static int  method =0;
+    static public void setuserstate(Boolean a){
+        //System.out.println(a);
+        userstate=a;
+    }
     static public Scanner myObj = new Scanner(System.in);
     public static void main(String[] args) throws Exception {
         NioEventLoopGroup eventExecutors = new NioEventLoopGroup();
@@ -66,19 +71,20 @@ public class MyClient {
 
                     MyClientHandler.addconnet();
 
-                    //System.out.println(MyClientHandler.connetmember);
-                    channel.writeAndFlush(Unpooled.copiedBuffer("2,"+MyClientHandler.channel+",agree", CharsetUtil.UTF_8));
+                    System.out.println("channel："+MyClientHandler.channel);
+                    
+                    channel.writeAndFlush(Unpooled.copiedBuffer(userstate+","+"2,"+MyClientHandler.channel+",agree", CharsetUtil.UTF_8));
 
                     
                 }
                 else if(key.equals("N")){
-                    channel.writeAndFlush(Unpooled.copiedBuffer("2,"+MyClientHandler.channel+",N", CharsetUtil.UTF_8));
+                    channel.writeAndFlush(Unpooled.copiedBuffer(userstate+","+"2,"+MyClientHandler.channel+",N", CharsetUtil.UTF_8));
 
 
                 }
             else{
             
-                channel.writeAndFlush(Unpooled.copiedBuffer(key, CharsetUtil.UTF_8));}}
+                channel.writeAndFlush(Unpooled.copiedBuffer(userstate+","+key, CharsetUtil.UTF_8));}}
             catch(Exception e){
                 System.out.println(e);
             }

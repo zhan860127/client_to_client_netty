@@ -30,13 +30,14 @@ public class MyClientHandler extends ChannelInboundHandlerAdapter {
         JSONObject a=decodemsg.Decodemsg(msg);
         ByteBuf byteBuf = (ByteBuf) msg;
         String c= byteBuf.toString(CharsetUtil.UTF_8);
-        //System.out.println(c);
+        //System.out.println(a);
 
 
         String temp=a.get("key").toString();
         
-        String method=a.get("method").toString();
+
         //System.out.println(a);
+      /*  
         if(temp.contains("-"))
         {
         String[] origin=temp.split("-");
@@ -49,17 +50,38 @@ public class MyClientHandler extends ChannelInboundHandlerAdapter {
            // System.out.println("是否要與 user"+channel+" 建立連線(Y/N)");
            
         }
-    }else{
+    }else{*/
 
-        if(c.contains("[")&&c.contains("]")){temp=c;}
-        System.out.println(temp);
+
+        switch(temp){
+           case "Status:true":
+             MyClient.setuserstate(true);
+            break;
+
+
+
+            default:
+            if(c.contains("[")&&c.contains("]")){temp=c;}
+            if(c.contains("-")){
+                String[] l=c.split("-");
+                channel=l[1];
+            }
+            else{
+            System.out.println(temp);}
+            break;
+        }
+
+
+
     }
         
-    }
+    
 
     static public void addconnet(){
         if(connetmember.indexOf(channel)==-1)
-        {connetmember.add(channel);}
+        {connetmember.add(channel);
+        
+        }
 
 
     }
