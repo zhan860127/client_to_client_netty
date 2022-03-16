@@ -71,7 +71,7 @@ public class MyClient {
 
                     MyClientHandler.addconnet();
 
-                    System.out.println("channel："+MyClientHandler.channel);
+                    //System.out.println("channel："+MyClientHandler.channel);
                     
                     channel.writeAndFlush(Unpooled.copiedBuffer(userstate+","+"2,"+MyClientHandler.channel+",agree", CharsetUtil.UTF_8));
 
@@ -80,6 +80,37 @@ public class MyClient {
                 else if(key.equals("N")){
                     channel.writeAndFlush(Unpooled.copiedBuffer(userstate+","+"2,"+MyClientHandler.channel+",N", CharsetUtil.UTF_8));
 
+
+                }
+
+                else if(key.contains("cmd:")){
+                    String[] cmd=key.split(":");
+                    channel.writeAndFlush(Unpooled.copiedBuffer(userstate+","+key, CharsetUtil.UTF_8));
+
+                    switch(cmd[1]){
+                        case "create_group":
+                        channel.writeAndFlush(Unpooled.copiedBuffer(userstate+","+key, CharsetUtil.UTF_8));
+                        String groupname=myObj.next();
+                        channel.writeAndFlush(Unpooled.copiedBuffer(userstate+",cmd:createname->"+groupname, CharsetUtil.UTF_8));
+                        String groupmember=myObj.next();
+                        channel.writeAndFlush(Unpooled.copiedBuffer(userstate+",cmd:createmember->"+groupmember, CharsetUtil.UTF_8));
+                        break;
+
+                        case "delete_group":
+                        channel.writeAndFlush(Unpooled.copiedBuffer(userstate+","+key, CharsetUtil.UTF_8));
+                        String groupname1=myObj.next();
+                        channel.writeAndFlush(Unpooled.copiedBuffer(userstate+",cmd:delete_group->"+groupname1, CharsetUtil.UTF_8));
+                        break;
+
+                        case "list":
+                        channel.writeAndFlush(Unpooled.copiedBuffer(userstate+","+key, CharsetUtil.UTF_8));
+                        break;
+
+
+                        default:
+                        System.out.println("error command");
+                        break;
+                    }
 
                 }
             else{

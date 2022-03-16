@@ -48,7 +48,7 @@ public class Myserver {
 
             
             ChannelFuture channelFuture = bootstrap.bind(6666).sync();
-            System.out.println("管理指令：\n add_member\n remove_member\n list\n drop_group\n change_list_name\n list,X \n");
+            System.out.println("管理指令：\n add_member\n remove_member\n list\n drop_group\n change_group_name\n list,X \n change_group_valid\n");
             
             //对关闭通道进行监听
 

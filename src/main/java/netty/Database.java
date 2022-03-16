@@ -8,6 +8,8 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
 
+import javax.swing.tree.ExpandVetoException;
+
 public class Database {
     public static void DB_connect(String[] args) throws ClassNotFoundException, SQLException{
         Class.forName("com.mysql.cj.jdbc.Driver");
@@ -68,26 +70,29 @@ public class Database {
     }
 
 
-    public static void list_group()throws Exception,SQLException{
+    public static void list_member()throws Exception,SQLException{
 
         Class.forName("com.mysql.cj.jdbc.Driver") ;
         Connection connection = DriverManager.getConnection("jdbc:mysql://192.168.1.104:3306/member_group","root","0000");
-        String sql = "select g2.name,g.user from member_group.Grouplist g,member_group.Group g2 where g.groupid=g2.Column_id order by g2.name,g.user asc";
+        String sql = "select g2.name,u.username  from Grouplist g,`Group` g2,`user` u where g.groupid =g2.Column_id  and u.ID=g.`user` ";
+       // System.out.println(sql);
         Statement statement=connection.createStatement();
         ResultSet rs=statement.executeQuery(sql);
-
-        System.out.println("|Groupid|User\t|");
+        System.out.println("member list");
+        System.out.println("|Groupname|User\t|");
         System.out.println("=====================");
         while (rs.next()){
    
             String groupid = rs.getString("name");
-            String user = rs.getString("user");
+            String user = rs.getString("username");
             System.out.printf("|"+groupid+"\t|");
             
 
             System.out.print(user);
             System.out.println("\t|");
         }
+
+
 
 
 
@@ -127,8 +132,8 @@ public class Database {
 
 
         for(String num:token)
-    {
-        String sql = "DELETE  IGNORE from Grouplist where groupid='"+groupname+"'and user='"+num+"'";
+    {   String sql="DELETE member_group.Grouplist FROM member_group.Grouplist left JOIN member_group.`user`on (member_group.Grouplist.`user` =member_group.`user`.`ID` ) where member_group.`user`.username ='"+num+"' and member_group.Grouplist.groupid ='"+groupid+"'";
+        //String sql = "DELETE  IGNORE from Grouplist where groupid='"+groupname+"'and user='"+num+"'";
         
         statement = connection.prepareCall(sql);
         
@@ -142,7 +147,7 @@ public class Database {
 
     }
         statement.close();
-        System.out.println("finish");
+        System.out.println("DB_group_remove_member：finish");
     }
 
 
@@ -150,17 +155,18 @@ public class Database {
         Class.forName("com.mysql.cj.jdbc.Driver") ;
         Connection connection = DriverManager.getConnection("jdbc:mysql://192.168.1.104:3306/member_group","root","0000");
         PreparedStatement statement=null;
-        String sql2 = "select Column_id from member_group.Group where name='"+key+"'";
+        /*String sql2 = "select Column_id from member_group.Group where name='"+key+"'";
         Statement statement1=connection.createStatement();
         ResultSet rs=statement1.executeQuery(sql2);
         String groupname="";
         while(rs.next()){
             groupname = rs.getString("Column_id");
-        }
+        }*/
 
 
 
-        String sql = "DELETE  IGNORE from Grouplist where groupid='"+groupname+"'";
+        String sql = "DELETE  from `Group` where `name`='"+key+"'";
+        System.out.println(sql);
         statement = connection.prepareCall(sql);
         statement.executeUpdate();
         statement.close();
@@ -173,14 +179,35 @@ public class Database {
         String[] token=member.split(",");
         Connection connection = DriverManager.getConnection("jdbc:mysql://192.168.1.104:3306/member_group","root","0000");
         PreparedStatement statement=null;
-    
-
-
-
-        for(String num:token)
-    {
-        String sql = "insert IGNORE into Grouplist(groupid,user) values("+groupid+","+num+")";
         
+        String sql2 = "select Column_id from member_group.Group where name='"+groupid+"'";
+        System.out.println(sql2);
+        Statement statement1=connection.createStatement();
+        ResultSet rs=statement1.executeQuery(sql2);
+        String groupname="";
+        while(rs.next()){
+            groupname = rs.getString("Column_id");
+        }
+
+        
+        System.out.println(groupname);
+
+        if(!groupname.equals(""))
+        {for(String num:token)
+    {   
+
+        String sql3 = "select ID from member_group.`user` where username='"+num+"'";
+        System.out.println(sql3);
+
+        Statement statement2=connection.createStatement();
+        rs=statement2.executeQuery(sql3);
+        String userid="";
+        while(rs.next()){
+            userid = rs.getString("ID");
+        }
+        if(!userid.equals(""))
+        {String sql = "insert IGNORE into Grouplist(groupid,`user`) values("+groupname+","+userid+")";
+        System.out.println(sql);
         statement = connection.prepareCall(sql);
         
         try{
@@ -188,12 +215,13 @@ public class Database {
         
         }catch(Exception e){
             System.out.println(e);
-        }
+        }}
 
 
     }
         statement.close();
-
+        }
+        else {System.out.println("wrong group name");}
     }
 
 
@@ -201,10 +229,12 @@ public class Database {
 
         Class.forName("com.mysql.cj.jdbc.Driver") ;
         Connection connection = DriverManager.getConnection("jdbc:mysql://192.168.1.104:3306/member_group","root","0000");
-        String sql = "SELECT g.id ,g.groupid ,g.`user` ,g2.name  from member_group.Grouplist g ,member_group.`Group` g2 where g2.Column_id =g.groupid and g2.name='"+i+"' order by user asc";
+       // System.out.println("String i:"+i);
+        String sql = "SELECT g.`user` from member_group.Grouplist g ,member_group.`Group` g2 where  g2.Column_id =g.groupid and g2.name='"+i+"' order by g.`user` asc";
         Statement statement=connection.createStatement();
+        System.out.println("=====================");
         ResultSet rs=statement.executeQuery(sql);
-
+        
         System.out.println("|User\t|");
         System.out.println("=====================");
         while (rs.next()){
@@ -271,10 +301,10 @@ public class Database {
         Class.forName("com.mysql.cj.jdbc.Driver") ;
         //System.out.println("I="+i);
         Connection connection = DriverManager.getConnection("jdbc:mysql://192.168.1.104:3306/member_group","root","0000");
-        String sql = "select g.`user` from Grouplist g,member_group.`Group` g2 where g2.Column_id =g.groupid and g2.name='"+i+"'";
+        String sql = "select g.`user` from Grouplist g,member_group.`Group` g2 where  g2.Column_id =g.groupid and g2.name='"+i+"'";
         Statement statement=connection.createStatement();
         ResultSet rs=statement.executeQuery(sql);
-
+        System.out.println("sql:"+sql);
         ArrayList<String> list=new ArrayList<String> ();
         
         while (rs.next()){
@@ -289,19 +319,46 @@ public class Database {
     }
 
     public static ArrayList<String> group_get()throws Exception,SQLException{
+        System.out.println("group_get");
 
         Class.forName("com.mysql.cj.jdbc.Driver") ;
         //System.out.println("I="+i);
         Connection connection = DriverManager.getConnection("jdbc:mysql://192.168.1.104:3306/member_group","root","0000");
-        String sql = "select groupid,user from Grouplist ";
+        String sql = "select g2.name,u.username  from Grouplist g,`Group` g2,`user` u where g.groupid =g2.Column_id and g2.validation=1 and u.ID=g.`user`";
         Statement statement=connection.createStatement();
         ResultSet rs=statement.executeQuery(sql);
 
         ArrayList<String> list=new ArrayList<String> ();
-        
+       
         while (rs.next()){
-            list.add(rs.getString("groupid"));
-            list.add(rs.getString("user"));
+            list.add(rs.getString("name"));
+            list.add(rs.getString("username"));
+            
+
+        }
+        //System.out.print("rs:"+rs.next());
+        for(String num:list){
+            System.out.println(num);
+
+        }
+        
+        return list;
+    }
+
+    public static ArrayList<String> group_list_get()throws Exception,SQLException{
+
+        Class.forName("com.mysql.cj.jdbc.Driver") ;
+        //System.out.println("I="+i);
+        Connection connection = DriverManager.getConnection("jdbc:mysql://192.168.1.104:3306/member_group","root","0000");
+        String sql = "select name from member_group.`Group` where `validation`=1";
+        Statement statement=connection.createStatement();
+        ResultSet rs=statement.executeQuery(sql);
+
+        ArrayList<String> list=new ArrayList<String> ();
+       
+        while (rs.next()){
+            list.add(rs.getString("name"));
+           // list.add(rs.getString("validaton"));
             
 
         }
@@ -311,6 +368,101 @@ public class Database {
     }
 
 
+
+
+    public static void DB_change_group_name(String group1,String group2)throws Exception,SQLException{
+        Class.forName("com.mysql.cj.jdbc.Driver") ;
+       
+        Connection connection = DriverManager.getConnection("jdbc:mysql://192.168.1.104:3306/member_group","root","0000");
+        
+        String sql = "UPDATE  `Group` set name='"+group2+"'where name='"+group1+"'" ;
+       // System.out.println(sql);
+        PreparedStatement statement = connection.prepareCall(sql);
+
+        try{
+            statement.executeUpdate();
+            System.out.println("finish");
+
+            }catch(Exception e){
+               // System.out.println(e);
+                System.out.println("group name have been existed");
+            }
+    
+            statement.close();
+        
+
+    
+        
+    }
+
+public static void DB_increase_group(String group1)throws Exception,SQLException{
+    Class.forName("com.mysql.cj.jdbc.Driver") ;
+    //System.out.println("I="+i);
+    Connection connection = DriverManager.getConnection("jdbc:mysql://192.168.1.104:3306/member_group","root","0000");
+    String sql = "insert  IGNORE into `Group`(name) values('"+group1+"')";
+    PreparedStatement statement = connection.prepareCall(sql);
+
+    try{
+        statement.executeUpdate();
+        
+        }catch(Exception e){
+            System.out.println(e);
+        }
+
+        statement.close();
+    
+
+
+    
+        System.out.println("DB_increase_group：finish");
+
+}
+
+    public static void list_group()throws SQLException, ClassNotFoundException{
+        Class.forName("com.mysql.cj.jdbc.Driver") ;
+        Connection connection = DriverManager.getConnection("jdbc:mysql://192.168.1.104:3306/member_group","root","0000");
+       
+
+
+
+        String  sql = "select `name`,validation from `Group` ";
+        //System.out.println(sql);
+        Statement statement=connection.createStatement();
+        ResultSet rs=statement.executeQuery(sql);
+        System.out.println("\nGroup list");
+        System.out.println("|Group name\t|validation|");
+        System.out.println("=====================");
+        while (rs.next()){
+   
+            String name = rs.getString("name");
+            String validation = rs.getString("validation");
+            System.out.printf("|"+name+"\t|");
+            
+
+            System.out.print(validation);
+            System.out.println("\t|");
+        }
+
+
+
+    } 
+
+    public static void DB_change_group_validation (String i,String j) throws SQLException,ClassNotFoundException{
+        Class.forName("com.mysql.cj.jdbc.Driver") ;
+        Connection connection = DriverManager.getConnection("jdbc:mysql://192.168.1.104:3306/member_group","root","0000");
+
+        String  sql = "update `Group` set validation='" +i+"' where name='"+j+"'";
+        //System.out.println(sql);
+        Statement statement=connection.createStatement();
+        statement.executeUpdate(sql);
+
+    
+        
+      
+
+
+
+    }
 
 
 

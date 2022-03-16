@@ -124,34 +124,15 @@ public class MyServerHandler extends ChannelInboundHandlerAdapter  {
        //sendmessage(ctx,msg);
        ByteBuf byteBuf = (ByteBuf) msg;
        String b= byteBuf.toString(CharsetUtil.UTF_8);
-       System.out.println("Origin"+b);
+       System.out.println("Origin "+b);
        JSONObject  jsonObjectdata=decodemsg.Decodemsg(msg);
        System.out.println("JSON  in myserver："+jsonObjectdata);
 
        String message=jsonObjectdata.get("key").toString();
-
-
-       switch(message){
-        case "list":
-
-        ArrayList<String> group = Database.group_get();
-            int i=1;    
-        for (String l : group) {
-            System.out.println((i%2==0)+","+l);
-         ctx.channel().write(Unpooled.copiedBuffer(l,CharsetUtil.UTF_8));
-                if(i%2==0){
-                    ctx.channel().write(Unpooled.copiedBuffer("\n",CharsetUtil.UTF_8));
-                }else{
-                ctx.channel().write(Unpooled.copiedBuffer("|",CharsetUtil.UTF_8));
-            }
-            i++;
-            
-        }
-        ctx.channel().flush();
-            break;
         
-        default:
-            if(message.matches("name:(.*)")){
+       
+ if(!clientmanage.manage_member(message,ctx))
+            {if(message.matches("name:(.*)")){
                //System.out.print("usernameinsert");
               
                 String[] a=message.split(":");
@@ -177,9 +158,9 @@ public class MyServerHandler extends ChannelInboundHandlerAdapter  {
             else{
                 
             sendmessage_test(ctx,jsonObjectdata);
-            }
-            break;
-       }
+            }}
+  
+       
 
        
     }
@@ -193,6 +174,7 @@ public class MyServerHandler extends ChannelInboundHandlerAdapter  {
             System.out.print("member\n");
             String memberlist=myObj.next();
             Database.DB_group_add_member(key,memberlist);
+            System.out.println("管理指令：\n add_member\n remove_member\n list\n drop_group\n change_group_name\n list,X \n change_group_valid\n");
             break;
 
             case "remove_member":
@@ -202,21 +184,23 @@ public class MyServerHandler extends ChannelInboundHandlerAdapter  {
             System.out.print("member：(user1,user2,.....)\n");
             String memberlist1=myObj.next();
             Database.DB_group_remove_member(key,memberlist1);
-            
+            System.out.println("管理指令：\n add_member\n remove_member\n list\n drop_group\n change_group_name\n list,X \n change_group_valid\n");
             break;
 
             case "list":
             System.out.println("group list ");
-            Database.list_group();
+            Database.list_member();
+            System.out.println("管理指令：\n add_member\n remove_member\n list\n drop_group\n change_group_name\n list,X \n change_group_valid\n");
             break;
 
             case "drop_group":
-            System.out.println("group list ");
+            //System.out.println("group list ");
+            Database.list_member();
             Database.list_group();
             System.out.println("witch group want to drop");
             key=myObj.next();
             Database.DB_drop_group(key);
-
+            System.out.println("管理指令：\n add_member\n remove_member\n list\n drop_group\n change_group_name\n list,X \n change_group_valid\n");
             break;
 
             case "change_group_name":
@@ -224,25 +208,29 @@ public class MyServerHandler extends ChannelInboundHandlerAdapter  {
             String group_1=myObj.next();
             System.out.println("change name");
             String group_2=myObj.next();
-            ChangeGroupName(group_1,group_2);
-
+            Database.DB_change_group_name(group_1,group_2);
+            System.out.println("管理指令：\n add_member\n remove_member\n list\n drop_group\n change_group_name\n list,X \n change_group_valid\n");
             break;
             case "change_group_valid":
-            System.out.println("group list ");
-            System.out.println(map);
-            System.out.println("witch group want to change validation");
+            
+            Database.list_group();
+            System.out.println("which group want to change validation");
             key=myObj.next();
 
             System.out.println("validatio you want to change");
             String key2=myObj.next();
-            map_valid.put(key,Boolean.parseBoolean(key2));
-
+            Database.DB_change_group_validation(key2, key);
+            Database.list_group();
+            System.out.println("管理指令：\n add_member\n remove_member\n list\n drop_group\n change_group_name\n list,X \n change_group_valid\n");
             break;
 
             default :
-                if(key.matches("list,\\d")){
+                if(key.matches("list,.*")){
                     
                     String[] tokens=key.split(",");
+                    for(String num:tokens){
+                        System.out.println(num);
+                    }
                     System.out.println("group list "+tokens[1]);
                     Database.list_group_i(tokens[1]);
                     //System.out.println(map.get(tokens[1]));
@@ -266,10 +254,10 @@ public class MyServerHandler extends ChannelInboundHandlerAdapter  {
 		else
 			return null;
 	}
-    private void sendmessage_test(ChannelHandlerContext ctx, JSONObject  jsonObjectdata) throws Exception {
+    public void sendmessage_test(ChannelHandlerContext ctx, JSONObject  jsonObjectdata) throws Exception {
         if(jsonObjectdata.get("status").toString().equals("true")){
         
-        String channel=jsonObjectdata.get("channel").toString();
+        //String channel=jsonObjectdata.get("channel").toString();
 
         sendtoserver(jsonObjectdata.get("method").toString(),jsonObjectdata.get("channel").toString(),jsonObjectdata.get("key").toString(),contexts.indexOf(ctx));
         }
@@ -359,6 +347,8 @@ public class MyServerHandler extends ChannelInboundHandlerAdapter  {
 
     private void unicast(String target,String key,int currentIndex) throws Exception{
         System.out.println("target="+target);
+
+        if(map_connect.containsKey(target)){
         String id = re_map_connect.get(currentIndex);
         //System.out.println("unicast work");
         if (key.equals("agree")){
@@ -389,20 +379,22 @@ public class MyServerHandler extends ChannelInboundHandlerAdapter  {
         }
         //System.out.println(Database.DBtell_connect(Integer.toString(currentIndex),target));
 
-
+        System.out.println("Connect status:"+Database.DBtell_connect(id,target));
         if(!Database.DBtell_connect(id,target)){
             
             if(key.equals("connect"))
             {
             
             String name=Database.get_member_name(re_map_connect.get(currentIndex));
-            
-            System.out.println("map="+map_connect);
+            if(map_connect.get(target)!=null)
+            {System.out.println("map="+map_connect);
             //System.out.println(target);
             contexts.get(map_connect.get(target)).write(Unpooled.copiedBuffer("是否要與 User "+name +" :建立連線[Y/N]" ,CharsetUtil.UTF_8));                     
             contexts.get(map_connect.get(target)).flush();
+            Thread.sleep(30);
             contexts.get(map_connect.get(target)).write(Unpooled.copiedBuffer("User-"+name ,CharsetUtil.UTF_8));
             contexts.get(map_connect.get(target)).flush();
+            }
         }
         }else
         {
@@ -415,7 +407,7 @@ public class MyServerHandler extends ChannelInboundHandlerAdapter  {
         
         Database.refresh(id, target);
             
-        }}
+        }}}
 
 
     public void remove_member(String key){
