@@ -3,12 +3,14 @@ package netty;
 
 
 import java.sql.SQLException;
-
+import java.sql.Time;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Scanner;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.Vector;
 
 import org.json.JSONObject;
@@ -20,6 +22,8 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.util.CharsetUtil;
 
+
+    
 @ChannelHandler.Sharable
 public class MyServerHandler extends ChannelInboundHandlerAdapter  {
     private static int MAX_CONN=15;
@@ -27,25 +31,31 @@ public class MyServerHandler extends ChannelInboundHandlerAdapter  {
     private static Vector <ChannelHandlerContext> contexts=new Vector<>(MAX_CONN);//保存channel的列表
     private static Map<String, ArrayList<Integer>> map = new HashMap<>();//對照群組人員以及其名稱
     private static Map<String, Boolean> map_valid = new HashMap<>(); //顯示或隱藏群組
-    private static Map<String, Integer> map_connect = new HashMap<>(); //顯示或隱藏群組
-    private static Map<Integer,String> re_map_connect = new HashMap<>(); //顯示或隱藏群組
-    
-    static ArrayList<Integer> first; //初始化群組
-    static ArrayList<Integer> second;//初始化群組
+    private static Map<String, Integer> map_connect = new HashMap<>(); //用 DB 的 userid 找到對應的 channel id in array
+    private static Map<Integer,String> re_map_connect = new HashMap<>(); //用 channel id  找到對應的 DB->id
     static ArrayList<ArrayList<Integer>> table= new ArrayList<ArrayList<Integer>>(); //保存群組人員
     
     //ArrayList<connet> connetlist=new ArrayList<connet>(); //連線列表
 
 
-   public MyServerHandler(){
-
-    re_map_connect.put(999,"28");
-    map_connect.put("28",999);
+   public MyServerHandler() throws ClassNotFoundException, SQLException{
+    
+    re_map_connect.put(999,"28"); //建立一個虛擬的 client 端 :admin
+    map_connect.put("28",999); //建立一個虛擬的 client 端 :admin
         new Thread(new Runnable() {
             @Override
             public void run(){
  
-                
+                Timer timer = new Timer(); 
+                long delay1 =0; 
+                long period1 = 1800; 
+                // 從現在開始 1 秒鐘之後，每隔 1 秒鐘執行一次 job1 
+                try {
+                    timer.schedule(new TimerTest(), delay1, period1);
+                } catch (ClassNotFoundException | SQLException e1) {
+                    // TODO Auto-generated catch block
+                    e1.printStackTrace();
+                } 
                 Scanner myObj=new Scanner(System.in);
                 while(true){         
                 try {
@@ -64,6 +74,8 @@ public class MyServerHandler extends ChannelInboundHandlerAdapter  {
             }
         }).start(); 
     }
+
+    
 
 /*
     public void create_connet(String user1,String user2){
@@ -441,7 +453,7 @@ public class MyServerHandler extends ChannelInboundHandlerAdapter  {
             
         }}}
 
-
+/*
     public void remove_member(String key){
         String[] tokens = key.split(",");
 
@@ -458,9 +470,9 @@ public class MyServerHandler extends ChannelInboundHandlerAdapter  {
         }
     
     }
+*/
 
-
-    public void drop_group(String key){
+   /* public void drop_group(String key){
         if(map.get(key)!=null){
 
             table.remove(table.indexOf(map.get(key)));
@@ -480,7 +492,7 @@ public class MyServerHandler extends ChannelInboundHandlerAdapter  {
                 map_valid.remove(group1);
             }else{System.out.println("group is not exist");}
             }
-    
+    */
     /*public void add_member(String key){
         String[] tokens = key.split(",");
 

@@ -1,7 +1,7 @@
 @startuml
 
 
-
+note over ClientA:broadcast
 
 ClientA-> Server:broadcast(message)
 Server->OtherClients:broadcast(ClientA:message)

@@ -1,12 +1,16 @@
 package netty;
 import java.lang.reflect.Array;
 import java.sql.Connection;
+import java.sql.Date;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
+import java.sql.Timestamp;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 
 import javax.swing.tree.ExpandVetoException;
 
@@ -471,9 +475,27 @@ public static void DB_increase_group(String group1)throws Exception,SQLException
         Statement statement=connection.createStatement();
         statement.executeUpdate(sql);
 
-    
-        
+
+    }
+
+    public static void refresh_connect_list () throws SQLException,ClassNotFoundException{
+        Class.forName("com.mysql.cj.jdbc.Driver") ;
+        Connection connection = DriverManager.getConnection("jdbc:mysql://192.168.1.104:3306/member_group","root","0000");
+        String  sql = "DELETE c2  FROM  member_group .connected  as c2 inner join (select `table`.d as id,TIMESTAMPDIFF(HOUR,`table`.a,`table`.b) as t from(select c.update_time as a ,now() as b ,c.id as d FROM connected c )as `table`)as d on c2.id =d.id where d.t>=24";
+        PreparedStatement statement = connection.prepareCall(sql);
       
+        try{
+            statement.executeUpdate();
+            
+            }catch(Exception e){
+                System.out.println(e);
+            }
+    
+            statement.close();
+        
+    
+
+
 
 
 
