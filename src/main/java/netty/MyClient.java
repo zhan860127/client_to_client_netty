@@ -45,8 +45,10 @@ public class MyClient {
             
             System.out.println("2,X,connect X is the targetID you want to construct\n");
             
-            System.out.println("'list'：lookup group list\n");
-            
+            System.out.println("'cmd:list'：lookup group list\n");
+            System.out.println("'cmd:create_group'：create a group and add the person\n");
+            System.out.println("'cmd:delete_group'：lookup group list\n");
+            System.out.println("'cmd:request_group'：lookup group list\n");
             ChannelFuture channelFuture = bootstrap.connect("127.0.0.1", 6666).sync();
 
             Channel  channel =channelFuture.channel();
@@ -68,18 +70,40 @@ public class MyClient {
             try
             {
                 if(key.equals("Y")){
-
-                    MyClientHandler.addconnet();
+                    if(MyClientHandler.method=="unicast")
+                    {MyClientHandler.addconnet();
 
                     //System.out.println("channel："+MyClientHandler.channel);
                     
-                    channel.writeAndFlush(Unpooled.copiedBuffer(userstate+","+"2,"+MyClientHandler.channel+",agree", CharsetUtil.UTF_8));
+                    channel.writeAndFlush(Unpooled.copiedBuffer(userstate+","+"2,"+MyClientHandler.channel+",uagree", CharsetUtil.UTF_8));
 
+                    }
+                    if(MyClientHandler.method=="groupcast")
+                    {
+
+                    //System.out.println("channel："+MyClientHandler.channel);
                     
+                    channel.writeAndFlush(Unpooled.copiedBuffer(userstate+","+"2,"+MyClientHandler.O_user+","+MyClientHandler.channel+"-"+MyClientHandler.O_user+"-gagree", CharsetUtil.UTF_8));
+
+                    }
                 }
                 else if(key.equals("N")){
-                    channel.writeAndFlush(Unpooled.copiedBuffer(userstate+","+"2,"+MyClientHandler.channel+",N", CharsetUtil.UTF_8));
+                    if(MyClientHandler.method=="unicast")
+                    {MyClientHandler.addconnet();
 
+                    //System.out.println("channel："+MyClientHandler.channel);
+                    
+                    channel.writeAndFlush(Unpooled.copiedBuffer(userstate+","+"2,"+MyClientHandler.channel+",uN", CharsetUtil.UTF_8));
+
+                    }
+                    if(MyClientHandler.method=="groupcast")
+                    {
+
+                    //System.out.println("channel："+MyClientHandler.channel);
+                    
+                    channel.writeAndFlush(Unpooled.copiedBuffer(userstate+","+"2,"+MyClientHandler.O_user+","+MyClientHandler.channel+"-"+MyClientHandler.O_user+"-gN", CharsetUtil.UTF_8));
+
+                    }
 
                 }
 
@@ -106,6 +130,11 @@ public class MyClient {
                         channel.writeAndFlush(Unpooled.copiedBuffer(userstate+","+key, CharsetUtil.UTF_8));
                         break;
 
+                        case "request_group":
+                        channel.writeAndFlush(Unpooled.copiedBuffer(userstate+","+key, CharsetUtil.UTF_8));
+                        String groupname2=myObj.next();
+                        channel.writeAndFlush(Unpooled.copiedBuffer(userstate+",cmd:request_group->"+groupname2, CharsetUtil.UTF_8));
+                        break;
 
                         default:
                         System.out.println("error command");

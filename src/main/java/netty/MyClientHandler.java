@@ -21,7 +21,8 @@ public class MyClientHandler extends ChannelInboundHandlerAdapter {
     static public ArrayList<String> connetmember=new ArrayList<String>();
     static public String channel;
     static public String method;
-
+    static public String O_user;
+    
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
         //接收服务端发送过来的消息
@@ -62,9 +63,16 @@ public class MyClientHandler extends ChannelInboundHandlerAdapter {
 
             default:
             if(c.contains("[")&&c.contains("]")){temp=c;}
-            if(c.contains("-")){
+            if(c.contains("User-")){
                 String[] l=c.split("-");
                 channel=l[1];
+                method="unicast";
+            }else if(c.contains("Group-")){
+                String[] l=c.split("-");
+                channel=l[1];
+                method="groupcast";
+                O_user=l[2];
+                
             }
             else{
             System.out.println(temp);}

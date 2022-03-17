@@ -1,0 +1,36 @@
+@startuml
+
+
+
+
+Client1 -> Server: 要求與 Client 2 通訊 unicast(2,Client2,connect)
+Server -> Database:尋找是否有 Client 1 與 2 in  connectlist
+alt not found
+
+Server->Client2:詢問是否與 Client 1 連線
+
+alt Client 2:"y"
+Client2->Server: Reply ("Y")
+Server-->Database:將 Client 1 與 Client 加入 Client list
+Server->Client1 :連線成功
+Server->Client2 :連線成功
+
+else Client 2:"N"
+Client2->Server: Reply ("Y")
+
+Server->Client1 :對方拒絕連線
+
+end
+
+
+
+
+
+end
+
+Client1->Server :unicast(2,Client2,message)
+Server->Client2:unicast(2,Client2,message)
+Server-->Database: refresh(Client1,Client2) in connectlist
+ 
+
+@enduml

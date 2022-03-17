@@ -1,0 +1,68 @@
+@startuml
+
+note over Client1:列印群組列表
+Client1->Server : cmd:list
+Server->Database: print group which group_validation not false
+Database-->Server: group list
+
+Server-->Client1:group list
+
+
+note over Client1:創建新群組
+Client1->Server : cmd:create_group(groupname,member)
+Server->Database: insert groupname in to group
+Server->Database: insert member in to grouplist(group)
+
+
+
+
+note over Client1:刪除群組
+Client1->Server : cmd:delete_group(groupname)
+Server->Database: drop_group
+Database-->Server: Response
+
+
+
+
+note over Client1:要求加入群組
+Client1->Server : cmd:request_join_group(groupname)
+Server->Database: check whether the group is exist
+Database-->Server:Response the status
+
+alt yes
+
+Server->Groupmembers:client1 request to join group[Y/N]
+
+Groupmembers->Server:Respose
+alt Y
+Server->Client1:Admin:您已成功加入群組
+Server->Database:insert into grouplist(group,Client1)
+
+else N
+Server->Client1:Admin:群組拒絕加入
+
+end
+else no 
+Server->Client1: 群組不存在
+end
+
+note over Client1:Group cast
+Client1 -> Server: groupcast(1,Group,message)
+Server -> Database:尋找是否為 Grouplist名單
+alt found
+
+Server->Groupmembers:(1,Group,message)
+
+else not found
+
+Server-->Groupmembers: not work
+
+
+end
+
+
+
+
+ 
+
+@enduml

@@ -1,0 +1,8 @@
+@startuml
+
+
+
+
+ClientA-> Server:broadcast(message)
+Server->OtherClients:broadcast(ClientA:message)
+@enduml

@@ -29,6 +29,7 @@ public class MyServerHandler extends ChannelInboundHandlerAdapter  {
     private static Map<String, Boolean> map_valid = new HashMap<>(); //顯示或隱藏群組
     private static Map<String, Integer> map_connect = new HashMap<>(); //顯示或隱藏群組
     private static Map<Integer,String> re_map_connect = new HashMap<>(); //顯示或隱藏群組
+    
     static ArrayList<Integer> first; //初始化群組
     static ArrayList<Integer> second;//初始化群組
     static ArrayList<ArrayList<Integer>> table= new ArrayList<ArrayList<Integer>>(); //保存群組人員
@@ -37,6 +38,9 @@ public class MyServerHandler extends ChannelInboundHandlerAdapter  {
 
 
    public MyServerHandler(){
+
+    re_map_connect.put(999,"28");
+    map_connect.put("28",999);
         new Thread(new Runnable() {
             @Override
             public void run(){
@@ -129,9 +133,9 @@ public class MyServerHandler extends ChannelInboundHandlerAdapter  {
        System.out.println("JSON  in myserver："+jsonObjectdata);
 
        String message=jsonObjectdata.get("key").toString();
-        
-       
- if(!clientmanage.manage_member(message,ctx))
+       String username=Database.get_member_name(re_map_connect.get(contexts.indexOf(ctx)));
+       //System.out.println("username："+username);
+ if(!clientmanage.manage_member(message,ctx,username))
             {if(message.matches("name:(.*)")){
                //System.out.print("usernameinsert");
               
@@ -309,7 +313,7 @@ public class MyServerHandler extends ChannelInboundHandlerAdapter  {
     }
 
 
-    private void broadcast(String key,int currentIndex) throws SQLException, Exception{
+    public void broadcast(String key,int currentIndex) throws SQLException, Exception{
         String user=Database.get_member_name(re_map_connect.get(currentIndex));
         for (int i=0;i<contexts.size();i++){   
             System.out.println("Usernum："+contexts.size());
@@ -320,26 +324,37 @@ public class MyServerHandler extends ChannelInboundHandlerAdapter  {
         }
         }
 
-    private void groupcast(String key,String channel ,int currentIndex) throws SQLException, Exception{
+    static public void groupcast(String key,String channel ,int currentIndex) throws SQLException, Exception{
 
         //System.out.println("Key2："+key);
         String name=Database.get_member_name(re_map_connect.get(currentIndex));
+
             ArrayList<String> group = Database.group_get_member_id(channel);
-            System.out.println(group.isEmpty());
+            //System.out.println("是否包含發送者："+group.contains(re_map_connect.get(currentIndex)));
             if(!group.isEmpty()){
+                if(group.contains(re_map_connect.get(currentIndex)))
+                {
                 for (String num : group){
                    
                    if(!map_connect.isEmpty())    
                    {   
 
-                       if(map_connect.get(num)!=null){
+                       if(map_connect.get(num)!=null&&map_connect.get(num)!=999){
                         //System.out.println("123123");
-                        System.out.println(num);     
+                        //System.out.println(map_connect.get(num));     
                        // System.out.println("Key"+key);
-                       contexts.get(map_connect.get(num)).writeAndFlush(Unpooled.copiedBuffer(name+"："+key,CharsetUtil.UTF_8));                     
+                       contexts.get(map_connect.get(num)).writeAndFlush(Unpooled.copiedBuffer("["+channel+"]"+name+"："+key,CharsetUtil.UTF_8));                     
                    }
                     }         
                }}else{
+
+                
+                contexts.get(currentIndex).writeAndFlush(Unpooled.copiedBuffer("you are not the group "+channel +" member",CharsetUtil.UTF_8));  
+
+               }
+            }
+               
+               else{
 
                     contexts.get(currentIndex).writeAndFlush(Unpooled.copiedBuffer("group 不存在",CharsetUtil.UTF_8));    
                }
@@ -347,11 +362,26 @@ public class MyServerHandler extends ChannelInboundHandlerAdapter  {
 
     private void unicast(String target,String key,int currentIndex) throws Exception{
         System.out.println("target="+target);
+        if(key.contains("gagree")){
+            String []tokens=key.split("-");
+            Database.DB_group_add_member(tokens[0],tokens[1]);
+            key="成功加入 group"+tokens[0];
+            String user="admin";
+            contexts.get(map_connect.get(target)).writeAndFlush(Unpooled.copiedBuffer(user+"："+key ,CharsetUtil.UTF_8));
+            
+        }else if(key.contains("gN")){
+            String []tokens=key.split("-");
+            Database.DB_group_add_member(tokens[0],tokens[1]);
+            key="群組拒絕加入";
+            String user="admin";
+            contexts.get(map_connect.get(target)).writeAndFlush(Unpooled.copiedBuffer(user+"："+key ,CharsetUtil.UTF_8));
+        }
+
 
         if(map_connect.containsKey(target)){
         String id = re_map_connect.get(currentIndex);
         //System.out.println("unicast work");
-        if (key.equals("agree")){
+        if (key.equals("uagree")){
            
             
             System.out.println("currentIndexin："+id);
@@ -371,7 +401,7 @@ public class MyServerHandler extends ChannelInboundHandlerAdapter  {
 
         }
 
-        if (key.equals("N")){
+        if (key.equals("uN")){
 
          //   contexts.get(Integer.parseInt(target)).writeAndFlush(Unpooled.copiedBuffer("0,-0-,成功連線\n" ,CharsetUtil.UTF_8));                     
             contexts.get(map_connect.get(target)).writeAndFlush(Unpooled.copiedBuffer("對方拒絕連線",CharsetUtil.UTF_8));                     
@@ -399,9 +429,11 @@ public class MyServerHandler extends ChannelInboundHandlerAdapter  {
         }else
         {
         //System.out.print("123123");
-
-       
         String user=Database.get_member_name(re_map_connect.get(currentIndex));
+        if (key.equals("uagree")){
+            key="對方同意連線";
+        }
+        
         contexts.get(map_connect.get(target)).writeAndFlush(Unpooled.copiedBuffer(user+"："+key ,CharsetUtil.UTF_8));  
         
         

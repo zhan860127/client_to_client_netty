@@ -1,0 +1,13 @@
+@startuml
+
+
+
+
+client -> server: channel.addLast
+server --> client: channelActive() & 要求username
+client -> server: reply username
+server -> Database:lookup username or create username
+Database --> server :reply userid 
+
+@enduml
+

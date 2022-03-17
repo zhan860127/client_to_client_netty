@@ -16,16 +16,14 @@ public class clientmanage {
 
 
 
-    static public boolean manage_member(String cmd,ChannelHandlerContext ctx) throws SQLException, Exception{
+    static public boolean manage_member(String cmd,ChannelHandlerContext ctx,String name) throws SQLException, Exception{
         boolean i=true;
         //System.out.println("cmd："+cmd);
         
         switch(cmd){
             case "cmd:list":
-            {//System.out.print("command:list");
-            
             list_client(ctx);
-            }
+            
             break;
 
             case "cmd:create_group":
@@ -65,6 +63,7 @@ public class clientmanage {
                 System.out.println("member："+newString1);
                 Database.DB_increase_group(groupname);
                 Database.DB_group_add_member(groupname, newString1);
+                Database.DB_group_add_member(groupname, "admin");
             }else if (cmd.contains("cmd:delete_group->")){
 
                 String[] toke=cmd.split("->");
@@ -72,11 +71,16 @@ public class clientmanage {
 
                 System.out.println("groupname："+groupname);
                 Database.DB_drop_group(groupname);
+            }else if(cmd.contains("cmd:request_group->")){
+                String[] toke=cmd.split("->");
+                groupname=toke[1];
+                MyServerHandler.groupcast("User "+name+" want to join the group [Y/N]",groupname,999);
+                MyServerHandler.groupcast("Group-"+groupname+"-"+name,groupname,999);
             }
             else{i=false;}
-            
-        }
             break;
+        }
+           
     }
     return i;
 }
@@ -89,8 +93,15 @@ static public void list_client(ChannelHandlerContext ctx) throws SQLException, E
                 int i=1;    
                 
             for (String l : group) {
-                
-             ctx.channel().write(Unpooled.copiedBuffer("|"+l+"\t",CharsetUtil.UTF_8));
+           // System.out.println(l+"  "+l.length());
+            String str="";
+            if(l.length()<7){
+                str="|"+l+"\t\t";
+            }else{
+                str= "|"+l+"\t";
+            }
+
+             ctx.channel().write(Unpooled.copiedBuffer(str,CharsetUtil.UTF_8));
                     if(i%2==0){
                         ctx.channel().write(Unpooled.copiedBuffer("|\n",CharsetUtil.UTF_8));
                     }else{
@@ -106,12 +117,18 @@ static public void list_client(ChannelHandlerContext ctx) throws SQLException, E
 
 static public void list_group(ChannelHandlerContext ctx) throws SQLException, Exception{
     ArrayList<String> group = Database.group_list_get();
-                int i=1;    
+                int i=1;
+            
             ctx.channel().write(Unpooled.copiedBuffer("|Groupname"+"|\n",CharsetUtil.UTF_8));
             ctx.channel().write(Unpooled.copiedBuffer("============"+"\n",CharsetUtil.UTF_8));
             for (String l : group) {
-                
-             ctx.channel().write(Unpooled.copiedBuffer("|"+l+"\t|\n",CharsetUtil.UTF_8));
+                String str="";
+            if(l.length()<7){
+                str="|"+l+"\t\t|";
+            }else{
+                str= "|"+l+"\t|";
+            }
+             ctx.channel().write(Unpooled.copiedBuffer(str+"\n",CharsetUtil.UTF_8));
                 
             }
             ctx.channel().flush();

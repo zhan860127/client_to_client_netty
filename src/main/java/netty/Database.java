@@ -85,11 +85,26 @@ public class Database {
    
             String groupid = rs.getString("name");
             String user = rs.getString("username");
-            System.out.printf("|"+groupid+"\t|");
             
+            String str="";
+            if(groupid.length()<7){
+                str="|"+groupid+"\t\t";
+            }else{
+                str= "|"+groupid+"\t";
+            }
 
-            System.out.print(user);
-            System.out.println("\t|");
+            System.out.printf(str);
+
+            if(user.length()<7){
+                str="|"+user+"\t\t";
+            }else{
+                str= "|"+user+"\t";
+            }
+            System.out.print(str);
+
+
+
+            System.out.println("|");
         }
 
 
@@ -304,7 +319,7 @@ public class Database {
         String sql = "select g.`user` from Grouplist g,member_group.`Group` g2 where  g2.Column_id =g.groupid and g2.name='"+i+"'";
         Statement statement=connection.createStatement();
         ResultSet rs=statement.executeQuery(sql);
-        System.out.println("sql:"+sql);
+        //System.out.println("sql:"+sql);
         ArrayList<String> list=new ArrayList<String> ();
         
         while (rs.next()){
@@ -324,7 +339,7 @@ public class Database {
         Class.forName("com.mysql.cj.jdbc.Driver") ;
         //System.out.println("I="+i);
         Connection connection = DriverManager.getConnection("jdbc:mysql://192.168.1.104:3306/member_group","root","0000");
-        String sql = "select g2.name,u.username  from Grouplist g,`Group` g2,`user` u where g.groupid =g2.Column_id and g2.validation=1 and u.ID=g.`user`";
+        String sql = "select g2.name,u.username  from Grouplist g,`Group` g2,`user` u where g.groupid =g2.Column_id and g2.validation=1 and u.ID=g.`user` and u.Status=1";
         Statement statement=connection.createStatement();
         ResultSet rs=statement.executeQuery(sql);
 
