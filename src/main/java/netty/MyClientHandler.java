@@ -26,7 +26,7 @@ public class MyClientHandler extends ChannelInboundHandlerAdapter {
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
         //接收服务端发送过来的消息
-
+        System.out.println(ctx);
 
         JSONObject a=decodemsg.Decodemsg(msg);
         ByteBuf byteBuf = (ByteBuf) msg;

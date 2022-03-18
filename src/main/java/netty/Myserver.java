@@ -1,6 +1,8 @@
 package netty;
 
 
+import java.util.zip.CheckedInputStream;
+
 import io.netty.bootstrap.ServerBootstrap;
 
 import io.netty.channel.ChannelFuture;
@@ -15,6 +17,7 @@ import io.netty.channel.socket.nio.NioServerSocketChannel;
 
 
 public class Myserver {
+    static int i=0;
     public static void main(String[] args) throws Exception {
         //创建两个线程组 boosGroup、workerGroup
         EventLoopGroup bossGroup = new NioEventLoopGroup();//bossGroup线程池负责监听端口，获取一个线程作为MainReactor,用于处理端口的Accept事件。
@@ -32,15 +35,20 @@ public class Myserver {
                 .childOption(ChannelOption.SO_KEEPALIVE, true)
                 //使用匿名内部类的形式初始化通道对象    
                 .childHandler(new ChannelInitializer<SocketChannel>() {
-                    private  final MyServerHandler SHARED =  new MyServerHandler();
 
+                    
+                    private  final MyServerHandler SHARED =  new MyServerHandler();
+                    
+                    
                         @Override
                         protected void initChannel(SocketChannel socketChannel) throws Exception {
                             //给pipeline管道设置处理器
-                            
-                            socketChannel.pipeline().addLast("",SHARED);
+                           
+                            socketChannel.pipeline().addLast(SHARED);
+                     
 
                         }
+                        
                     });//给workerGroup的EventLoop对应的管道设置处理器
             System.out.println("伺服器準備就緒");
             

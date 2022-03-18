@@ -27,18 +27,19 @@ import io.netty.util.CharsetUtil;
 @ChannelHandler.Sharable
 public class MyServerHandler extends ChannelInboundHandlerAdapter  {
     private static int MAX_CONN=15;
-    public int groupNum = 2;
+    static public int groupNum = 0;
     private static Vector <ChannelHandlerContext> contexts=new Vector<>(MAX_CONN);//保存channel的列表
     private static Map<String, ArrayList<Integer>> map = new HashMap<>();//對照群組人員以及其名稱
     private static Map<String, Boolean> map_valid = new HashMap<>(); //顯示或隱藏群組
     private static Map<String, Integer> map_connect = new HashMap<>(); //用 DB 的 userid 找到對應的 channel id in array
     private static Map<Integer,String> re_map_connect = new HashMap<>(); //用 channel id  找到對應的 DB->id
     static ArrayList<ArrayList<Integer>> table= new ArrayList<ArrayList<Integer>>(); //保存群組人員
-    
+   
     //ArrayList<connet> connetlist=new ArrayList<connet>(); //連線列表
 
 
    public MyServerHandler() throws ClassNotFoundException, SQLException{
+    
     
     re_map_connect.put(999,"28"); //建立一個虛擬的 client 端 :admin
     map_connect.put("28",999); //建立一個虛擬的 client 端 :admin
@@ -126,9 +127,10 @@ public class MyServerHandler extends ChannelInboundHandlerAdapter  {
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
         //发送消息到服务端
   
-        
+        System.out.println(ctx);
         contexts.add(ctx);
-        ctx.channel().writeAndFlush(Unpooled.copiedBuffer("false,please insort name:name\n",CharsetUtil.UTF_8));    
+        ctx.channel().writeAndFlush(Unpooled.copiedBuffer("false,please insort name:name\n",CharsetUtil.UTF_8));
+     
         //System.out.println(ctx);
        //purpose for let server can communication to client    
         }
@@ -550,9 +552,19 @@ public class MyServerHandler extends ChannelInboundHandlerAdapter  {
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
         //发生异常，关闭通道
         System.out.println(cause);
+
+        
         ctx.close();
     }
 
+    @Override
+    public void channelInactive(final ChannelHandlerContext ctx) {
+   
+       map_connect.remove(re_map_connect.get(contexts.indexOf(ctx)));
+       re_map_connect.remove(contexts.indexOf(ctx));
+       contexts.remove(contexts.indexOf(ctx));
+
+    }
     
 
 }

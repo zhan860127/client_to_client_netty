@@ -60,7 +60,7 @@ public class MyClient {
             key=myObj.next();   
             String[] tokens=key.split(",");
             if(tokens[0].equals("2")&&tokens.length>1){
-                MyClientHandler.connetmember.add(tokens[1]);
+                //MyClientHandler.connetmember.add(tokens[1]);
                 MyClientHandler.channel="0";
             }
 
